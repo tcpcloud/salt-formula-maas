@@ -1,0 +1,6 @@
+backup:
+  maas:
+    fs_includes: []
+    fs_excludes: []
+    actions:
+    - cmd: "rsync -aH  --exclude='/var/lib/maas/boot-resources' --relative /etc/maas /var/lib/maas /var/backups/maas_config"
