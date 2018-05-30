@@ -509,6 +509,18 @@ class AssignMachinesIP(MaasObject):
                                 'node:{}'.format(req_mac, machine['fqdn']))
         return data
 
+    def _get_nic_id_by_name(self, machine, req_name=None):
+        data = {}
+        for nic in machine['interface_set']:
+            data[nic['name']] = nic['id']
+        if req_name:
+            if req_name in data.keys():
+                return data[req_name]
+            else:
+                raise Exception('NIC with name:{} not found at '
+                                'node:{}'.format(req_name, machine['fqdn']))
+        return data
+
     def _disconnect_all_nic(self, machine):
         """
             Maas will fail, in case same config's will be to apply
@@ -538,7 +550,18 @@ class AssignMachinesIP(MaasObject):
             external "process" method. Those broke old-MaasObject logic,
             though make functions more simple in case iterable tasks.
         """
-        nic_id = self._get_nic_id_by_mac(machine, nic_data['mac'])
+
+        if nic_data.has_key('name'):
+            try:
+                nic_id = self._get_nic_id_by_mac(machine, nic_data['name'])
+            except Exception as e:
+                LOG.warn("Failed to find interface: {} on node: {}. Will try now by its MAC: {}".format(
+                    nic_data['name'], machine['fqdn'], nic_data['mac_address']))
+                nic_id = False
+
+        if not nic_id:
+            # assume MAC is always provided
+            nic_id = self._get_nic_id_by_mac(machine, nic_data['mac'])
 
         # Process op=link_subnet
         link_data = {}
@@ -569,9 +592,23 @@ class AssignMachinesIP(MaasObject):
                          "tags": nic_data.get('tags', ""),
                          "vlan": nic_data.get('vlan', "")}
 
+        if nic_data.has_key('type'):
+           # set parents
+           _bond_parents=[]
+           if nic_data.['type'] in ('bond', 'vlan', 'bridge'):
+               for p_name in nic_data['parents'].split(',').split():
+                   p_id = _get_nic_id_by_name(p_name)[p_name]
+                   _bond_parents.append(p_id)
+               if len(_bond_parents) > 0:
+                   physical_data['parents'] = _bond_parents
+           # set bond options
+           if nic_data.['type'] in ('bond'):
+              for k in [ k in nic_data.keys() if k.startwith('bond_'):
+                  physical_data[k] = nic_data[k]
+
         try:
             # Cleanup-old definition
-            LOG.debug("Processing {}:{},{}".format(nic_data['mac'], link_data,
+            LOG.debug("Processing {}:{},{}".format(nic_data['name'], link_data,
                                                    physical_data))
             # "link_subnet" and "fill all other data" - its 2 different
             # operations. So, first we update NIC:
@@ -586,7 +623,7 @@ class AssignMachinesIP(MaasObject):
                 'link_subnet', **link_data)
         except Exception as e:
             LOG.error("Failed to process interface:{} on node:{}".format(
-                nic_data['mac'], machine['fqdn']))
+                nic_data['name'], machine['fqdn']))
             raise Exception(str(e))
 
     def fill_data(self, name, data, machines):

@@ -16,6 +16,46 @@ Single maas service
       server:
         enabled: true
 
+Configure node interfaces.
+
+Interfaces are identified by provided `name` or by `mac` if `name` is not provided or not found.
+When configured name is not found interface name will be renamed.
+
+.. code-block:: yaml
+
+  maas:
+    region:
+      machines:
+        machine1:
+          pxe_interface_mac: "11:22:33:44:55:66"
+          interfaces:
+            nic01:
+              name: eth0
+              mac: "11:22:33:44:55:66"
+              mode: "static"
+              ip: "2.2.3.19"
+              subnet: "subnet1"
+              gateway: "2.2.3.2"
+        machine1:
+          pxe_interface_mac: "11:22:33:44:55:77"
+          interfaces:
+            nic01:
+              name: eth0
+              mode: manual
+            nic02:
+              name: eth0
+              mode: manual
+            bond0:
+              mode: dhcp
+              type: bond
+              subnet: "subnet1"
+              bond_mode: active-backup
+              parents: nic01,nic02
+            bond0.10
+              mode: auto
+              type: bond
+              parents: bond0
+
 Single MAAS region service [single UI/API]
 
 .. code-block:: yaml
