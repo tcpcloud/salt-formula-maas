@@ -322,6 +322,19 @@ maas_create_subnet_{{ subnet_name }}:
 {%- endfor %}
 
 {%- for subnet_name, subnet in region.subnets.iteritems() %}
+{%- for vid, vlan in subnet.get('vlan', {}).items() %}
+maas_update_vlan_for_{{ subnet_name }}_{{ vid }}:
+  maasng.update_vlan:
+  - vid: {{ vid }}
+  - fabric: {{ subnet.cidr }}
+  - name: '{{ vlan.get('name', vid) }}'
+  - description: {{ vlan.description }}
+  - primary_rack: {{ region.maas_config.maas_name }}
+  - dhcp_on: {{ vlan.get('dhcp','False') }}
+{%- endfor %}
+{%- endfor %}
+
+{%- for subnet_name, subnet in region.subnets.iteritems() %}
 {%- if subnet.get('multiple') == True %}
 {%- for range_name, iprange in subnet.get('iprange',{}).items() %}
 maas_create_ipranger_{{ range_name }}:
@@ -391,7 +404,7 @@ maas_update_vlan_for_{{ fabric_name }}_{{ vid }}:
   maasng.update_vlan:
   - vid: {{ vid }}
   - fabric: {{ fabric_name }}
-  - name: {{ vlan.get('name','') }}
+  - name: '{{ vlan.get('name', vid) }}'
   - description: {{ vlan.description }}
   - primary_rack: {{ region.maas_config.maas_name }}
   - dhcp_on: {{ vlan.get('dhcp','False') }}

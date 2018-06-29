@@ -202,7 +202,7 @@ Multiple ip ranges for one particular subnet.
               comment: 'Comment 2'
 
 
-Update Vlan
+Update Vlan based on fabric name
 
 NOTE: Vid 0 has default name untagged in MaaS UI
 
@@ -213,6 +213,24 @@ NOTE: Vid 0 has default name untagged in MaaS UI
       fabrics:
         test-fabric:
           description: "Test fabric"
+          vlan:
+            0:
+              description: "Your VLAN 0"
+              dhcp: True
+            13:
+              description: "Your VLAN 13"
+              dhcp: False
+
+Update Vlan based on subnet CIDR (if maas:region:fabrics is not defined)
+
+.. code-block:: yaml
+
+  maas:
+    region:
+      subnets:
+        subnet1:
+          fabric: fabric-2  # Created by MaaS based on network interfaces
+          cidr: 2.2.3.0/24  # cidr is used to match this subnet to its fabric
           vlan:
             0:
               description: "Your VLAN 0"

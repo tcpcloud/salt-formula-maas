@@ -967,7 +967,12 @@ def get_fabricid(fabric):
     try:
         return list_fabric()[fabric]['id']
     except KeyError:
-        return {"error": "Frabic not found on MaaS server"}
+        # fabric might be specified as CIDR, try to find the actual fabric ID
+        maas_subnets = list_subnet()
+        for subnet in maas_subnets.keys():
+            if maas_subnets[subnet]['cidr'] == fabric:
+                return maas_subnets[subnet]['vlan']['fabric_id']
+        return {"error": "Fabric not found on MaaS server"}
 
 
 def update_vlan(name, fabric, vid, description, primary_rack, dhcp_on=False):
