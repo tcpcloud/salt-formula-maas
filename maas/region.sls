@@ -375,7 +375,7 @@ maas_update_vlan_for_{{ fabric_name }}_{{ vid }}:
   maasng.update_vlan:
   - vid: {{ vid }}
   - fabric: {{ fabric_name }}
-  - name: {{ vlan.get('name','') }}
+  - name: '{{ vlan.get('name', vid) }}'
   - description: {{ vlan.description }}
   - primary_rack: {{ region.maas_config.maas_name }}
   - dhcp_on: {{ vlan.get('dhcp','False') }}
