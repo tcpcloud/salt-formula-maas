@@ -529,11 +529,15 @@ Module function's example:
             machines:
               - kvm01
               - kvm02
-            timeout: 1200 # in seconds
+            {%- if region.timeout is defined and region.timeout.ready is defined %}
+            timeout: {{ region.timeout.ready }}
+            {%- endif %}
             req_status: "Ready"
       - require:
         - cmd: maas_login_admin
       ...
+
+The timeout setting is taken from the reclass pillar data.  If the pillar data is not defined, it will use the default value.
 
 If module run w/\o any extra paremeters - `wait_for_machines_ready` will wait for defined in salt machines. In those case, will be usefull to skip some machines:
 
@@ -547,7 +551,9 @@ If module run w/\o any extra paremeters - `wait_for_machines_ready` will wait fo
       module.run:
       - name: maas.wait_for_machine_status
       - kwargs:
-            timeout: 1200 # in seconds
+            {%- if region.timeout is defined and region.timeout.deployed is defined %}
+            timeout: {{ region.timeout.deployed }}
+            {%- endif %}
             req_status: "Deployed"
             ignore_machines:
                - kvm01 # in case it's broken or whatever

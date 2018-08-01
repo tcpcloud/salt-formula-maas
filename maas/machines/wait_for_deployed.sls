@@ -9,5 +9,8 @@ wait_for_machines_deployed:
   - name: maas.wait_for_machine_status
   - kwargs:
         req_status: "Deployed"
+        {%- if region.timeout is defined and region.timeout.deployed is defined %}
+        timeout: {{ region.timeout.deployed }}
+        {%- endif %}
   - require:
     - cmd: maas_login_admin

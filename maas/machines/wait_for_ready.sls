@@ -7,5 +7,9 @@ maas_login_admin:
 wait_for_machines_ready:
   module.run:
   - name: maas.wait_for_machine_status
+  - kwargs:
+        {%- if region.timeout is defined and region.timeout.ready is defined %}
+        timeout: {{ region.timeout.ready }}
+        {%- endif %}
   - require:
     - cmd: maas_login_admin
