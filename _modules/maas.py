@@ -445,13 +445,22 @@ class Machine(MaasObject):
         return data
 
     def update(self, new, old):
+        LOG.debug('Updating machine')
         old_macs = set(v['mac_address'].lower() for v in old['interface_set'])
-        if new['mac_addresses'].lower() not in old_macs:
+        LOG.debug('old_macs: %s' % old_macs)
+        if isinstance(new['mac_addresses'], list):
+            new_macs = set(v.lower() for v in new['mac_addresses'])
+        else:
+            new_macs = set([new['mac_addresses'].lower()])
+        LOG.debug('new_macs: %s' % new_macs)
+        intersect = list(new_macs.intersection(old_macs))
+        if not intersect:
             self._update = False
             LOG.info('Mac changed deleting old machine %s', old['system_id'])
             self._maas.delete(u'api/2.0/machines/{0}/'
                               .format(old['system_id']))
         else:
+            new['mac_addresses'] = intersect
             new[self._update_key] = str(old[self._update_key])
         return new
 
