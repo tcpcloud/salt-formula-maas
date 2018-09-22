@@ -128,7 +128,7 @@ def get_machine(hostname):
         return {"error": "Machine not found on MaaS server"}
 
 
-def list_machines():
+def list_machines(status_filter=None):
     """
     Get list of all machines from maas server
 
@@ -137,12 +137,14 @@ def list_machines():
     .. code-block:: bash
 
         salt 'maas-node' maasng.list_machines
+        salt 'maas-node' maasng.list_machines status_filter=[Deployed,Ready]
     """
     machines = {}
     maas = _create_maas_client()
     json_res = json.loads(maas.get(u'api/2.0/machines/').read())
     for item in json_res:
-        machines[item["hostname"]] = item
+        if not status_filter or item['status_name'] in status_filter:
+            machines[item["hostname"]] = item
     return machines
 
 
