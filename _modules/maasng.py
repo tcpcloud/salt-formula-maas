@@ -159,6 +159,56 @@ def update_machine():
 
     return False
 
+def delete_machine(hostname):
+    """
+    Delete specified machine
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt 'maas-node' maasng.delete_machine server_hostname
+        salt-call maasng.delete_machine server_hostname
+    """
+    result = {}
+    maas = _create_maas_client()
+    system_id = get_machine(hostname)["system_id"]
+    LOG.debug('delete_machine: {}'.format(system_id))
+    maas.delete(
+        u"api/2.0/machines/{0}/".format(system_id)).read()
+
+    result["new"] = "Machine {0} deleted".format(hostname)
+    return result
+
+def action_machine(hostname, action, comment=None):
+    """
+    Send simple action (e.g. mark_broken, mark_fixed) to machine.
+
+    :param action:  Action to send for machine (one of MaaS' op codes)
+    :param comment: Optional comment for the event log.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt 'maas-node' maasng.action_machine server_hostname mark_broken comment='dead'
+    """
+    result = {}
+    data = {}
+    maas = _create_maas_client()
+    system_id = get_machine(hostname)["system_id"]
+    LOG.debug('action_machine: {}'.format(system_id))
+
+    # TODO validation
+    if comment:
+        data["comment"] = comment
+    json_res = json.loads(maas.post(
+        u"api/2.0/machines/{0}/".format(system_id), action, **data).read())
+    LOG.info(json_res)
+    result["new"] = "Machine {0} action {1} executed".format(hostname, action)
+
+    return result
+
 # END MACHINE SECTION
 # RAID SECTION
 
