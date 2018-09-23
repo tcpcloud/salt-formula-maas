@@ -23,3 +23,7 @@ maas:
       password: password
       username: maas
     salt_master_ip: 127.0.0.1
+    timeout:
+      deployed: 900
+      ready: 900
+      attempts: 2

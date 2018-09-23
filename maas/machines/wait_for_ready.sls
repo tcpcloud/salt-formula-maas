@@ -7,5 +7,8 @@ maas_login_admin:
 wait_for_machines_ready:
   module.run:
   - name: maas.wait_for_machine_status
+  - kwargs:
+        timeout: {{ region.timeout.ready }}
+        attempts: {{ region.timeout.attempts }}
   - require:
     - cmd: maas_login_admin
