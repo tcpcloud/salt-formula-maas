@@ -921,6 +921,7 @@ class MachinesStatus(MaasObject):
             req_status: string; Polling status
             machines:   list; machine names
             ignore_machines: list; machine names
+            attempts:   max number of automatic hard retries
         :ret: True
                  Exception - if something fail/timeout reached
         """
@@ -929,6 +930,8 @@ class MachinesStatus(MaasObject):
         req_status = kwargs.get("req_status", "Ready")
         to_discover = kwargs.get("machines", None)
         ignore_machines = kwargs.get("ignore_machines", None)
+        attempts = kwargs.get("attempts", 0)
+        failed_attempts = {}
         if not to_discover:
             try:
                 to_discover = __salt__['config.get']('maas')['region'][
@@ -943,11 +946,45 @@ class MachinesStatus(MaasObject):
         while len(total) <= len(to_discover):
             for m in to_discover:
                 for discovered in MachinesStatus.execute()['machines']:
-                    if m == discovered['hostname'] and \
-                            discovered['status'].lower() == req_status.lower():
-                        if m in total:
+                    if m == discovered['hostname'] and m in total:
+                        req_status_list = req_status.lower().split('|')
+                        if discovered['status'].lower() in req_status_list:
                             total.remove(m)
-
+                        elif attempts > 0 and (m not in failed_attempts or
+                                               failed_attempts[m] < attempts):
+                            status = discovered['status']
+                            sid = discovered['system_id']
+                            cls._maas = _create_maas_client()
+                            if status in ['Failed commissioning', 'New']:
+                                LOG.info('Machine {0} deleted'.format(sid))
+                                cls._maas.delete(u'api/2.0/machines/{0}/'
+                                    .format(sid))
+                                Machine().process()
+                            elif status in ['Failed testing']:
+                                data = {}
+                                LOG.info('Machine {0} overriden'.format(sid))
+                                action = 'override_failed_testing'
+                                cls._maas.post(u'api/2.0/machines/{0}/'
+                                    .format(sid), action, **data)
+                            elif status in ['Failed deployment', 'Allocated']:
+                                data = {}
+                                LOG.info('Machine {0} mark broken'.format(sid))
+                                cls._maas.post(u'api/2.0/machines/{0}/'
+                                    .format(sid), 'mark_broken', **data)
+                                LOG.info('Machine {0} mark fixed'.format(sid))
+                                cls._maas.post(u'api/2.0/machines/{0}/'
+                                    .format(sid), 'mark_fixed', **data)
+                                if m in failed_attempts and failed_attempts[m]:
+                                    LOG.info('Machine {0} fio test'.format(sid))
+                                    data['testing_scripts'] = 'fio'
+                                    cls._maas.post(u'api/2.0/machines/{0}/'
+                                        .format(sid), 'commission', **data)
+                                DeployMachines().process()
+                            else:
+                                continue
+                            if m not in failed_attempts:
+                                failed_attempts[m] = 0
+                            failed_attempts[m] = failed_attempts[m] + 1
             if len(total) <= 0:
                 LOG.debug(
                     "Machines:{} are:{}".format(to_discover, req_status))
@@ -959,7 +996,9 @@ class MachinesStatus(MaasObject):
                 "Waiting status:{} "
                 "for machines:{}"
                 "\nsleep for:{}s "
-                "Timeout:{}s".format(req_status, total, poll_time, timeout))
+                "Timeout:{}s ({}s left)"
+                .format(req_status, total, poll_time, timeout,
+                    timeout - (time.time() - started_at)))
             time.sleep(poll_time)
 
 

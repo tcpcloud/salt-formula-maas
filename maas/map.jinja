@@ -22,6 +22,10 @@ Debian:
   bind:
     host: 0.0.0.0
     port: 80
+  timeout:
+    ready: 1200
+    deployed: 7200
+    attempts: 0
 {%- endload %}
 
 {%- set region = salt['grains.filter_by'](region_defaults, merge=salt['pillar.get']('maas:region', {})) %}

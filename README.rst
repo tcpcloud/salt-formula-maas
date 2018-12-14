@@ -622,11 +622,15 @@ Wait for status of selected machine's:
             machines:
               - kvm01
               - kvm02
-            timeout: 1200 # in seconds
+            timeout: {{ region.timeout.ready }}
+            attempts: {{ region.timeout.attempts }}
             req_status: "Ready"
       - require:
         - cmd: maas_login_admin
       ...
+
+The timeout setting is taken from the reclass pillar data.
+If the pillar data is not defined, it will use the default value.
 
 If module run w/\o any extra paremeters,
 ``wait_for_machines_ready`` will wait for defined in salt
@@ -642,7 +646,8 @@ machines. In this case, it is usefull to skip some machines:
       module.run:
       - name: maas.wait_for_machine_status
       - kwargs:
-            timeout: 1200 # in seconds
+            timeout: {{ region.timeout.deployed }}
+            attempts: {{ region.timeout.attempts }}
             req_status: "Deployed"
             ignore_machines:
                - kvm01 # in case it's broken or whatever
