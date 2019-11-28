@@ -20,8 +20,8 @@ Single MAAS region service [single UI/API]:
 .. code-block:: yaml
 
   maas:
-    salt_master_ip: 192.168.0.10
     region:
+      salt_master_ip: 192.168.0.10
       upstream_proxy:
         address: 10.0.0.1
         port: 8080
@@ -692,4 +692,3 @@ Documentation and Bugs
 * #salt-formulas @ irc.freenode.net
    Use this IRC channel in case of any questions or feedback which is always
    welcome
-
